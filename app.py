@@ -4,7 +4,9 @@ import os
 from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
+model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 # ================== Flask ==================
 app = Flask(__name__)
 
