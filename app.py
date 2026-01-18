@@ -10,8 +10,7 @@ app = Flask(__name__)
 
 # ================== Embedding Model ==================
 embed_model = SentenceTransformer(
-    "paraphrase-multilingual-MiniLM-L12-v2",
-    device="cpu"
+    "paraphrase-multilingual-MiniLM-L12-v2"
 )
 
 # ================== Gemini API ==================
@@ -45,7 +44,9 @@ def load_pdf_chunks(path, chunk_size=800):
 
 try:
     pdf_chunks = load_pdf_chunks(PDF_PATH)
-except Exception:
+    print("PDF Loaded:", len(pdf_chunks))
+except Exception as e:
+    print("PDF ERROR:", e)
     pdf_chunks = []
 
 # ================== Embeddings ==================
@@ -105,14 +106,14 @@ def find_relevant_chunks(question, chunks, max_chunks=5):
     scored_chunks.sort(key=lambda x: x[0], reverse=True)
     return [c[1] for c in scored_chunks[:max_chunks]]
 
-# ================== API ==================
+# ================== API Endpoint ==================
 @app.route("/chat", methods=["POST"])
 def chat_api():
-    data = request.get_json()
+    data = request.json
     user_input = data.get("message", "").strip()
 
     if not user_input:
-        return jsonify({"reply": ""})
+        return jsonify({"reply": "⚠️ من فضلك اكتب سؤالًا"})
 
     if not pdf_chunks:
         return jsonify({"reply": "❌ لم يتم تحميل المنهج."})
@@ -128,7 +129,7 @@ def chat_api():
 
     if not relevant_text:
         return jsonify({
-            "reply": "⚠️ هذه المعلومة غير موجودة في المنهج"
+            "reply": "⚠️ هذه المعلومة غير موجودة في المنهج."
         })
 
     prompt = f"""
@@ -151,9 +152,12 @@ def chat_api():
 - العربية فقط
 """
 
-    response = chat.send_message(prompt)
-    return jsonify({"reply": response.text})
+    try:
+        response = chat.send_message(prompt)
+        return jsonify({"reply": response.text})
+    except Exception as e:
+        return jsonify({"reply": f"❌ خطأ: {e}"})
 
-# ================== Run ==================
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(debug=True)
